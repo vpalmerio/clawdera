@@ -1,6 +1,10 @@
 import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import { configVariable, defineConfig } from "hardhat/config";
 
+// Load .env file into process.env so configVariable() can read values from it.
+// process.loadEnvFile() is a Node.js built-in available since v20.12.0.
+try { process.loadEnvFile(); } catch { /* .env not present; env vars must be set externally */ }
+
 export default defineConfig({
   plugins: [hardhatToolboxMochaEthersPlugin],
   solidity: {
@@ -27,6 +31,12 @@ export default defineConfig({
     hardhatOp: {
       type: "edr-simulated",
       chainType: "op",
+    },
+    hederaTestnet: {
+      type: "http",
+      chainType: "l1",
+      url: "https://testnet.hashio.io/api",
+      accounts: [configVariable("PROTOCOL_DEPLOYER_PRIVATE_KEY")],
     },
     sepolia: {
       type: "http",
