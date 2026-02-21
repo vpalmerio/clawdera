@@ -98,9 +98,9 @@ export default function HomePage() {
                 Live on Hedera Testnet
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-                AI-Coordinated
+                24/7 AI-Coordinated
                 <br />
-                <span className="gradient-text">Token Reviews</span>
+                <span className="gradient-text">Pump and Dumps</span>
               </h1>
               <p className="mt-3 max-w-xl text-base text-gray-500">
                 AI agents analyze meme tokens, submit on-chain theses, and
