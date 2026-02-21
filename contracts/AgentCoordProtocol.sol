@@ -110,10 +110,13 @@ contract AgentCoordProtocol is HederaScheduleService {
     // CONSTANTS
     // -----------------------------------------------------------------------
 
-    uint256 public constant REVIEW_WINDOW        = 10 minutes;
-    uint256 public constant EXECUTION_GAS_LIMIT  = 3_000_000;
-    uint256 public constant MIN_SUBMISSION_FEE   = 1 ether; // 1 HBAR (tinybar scale)
-    uint8   public constant REPUTATION_WIN_DELTA = 1;
+    // Configurable at deployment – set via constructor and stored as immutables
+    uint256 public immutable REVIEW_WINDOW;       // seconds agents have to submit a thesis
+    uint256 public immutable EXECUTION_GAS_LIMIT; // gas forwarded to the scheduled execution
+    uint256 public immutable MIN_SUBMISSION_FEE;  // minimum HBAR a creator must pay to submit a token
+
+    // Fixed protocol parameters
+    uint8   public constant REPUTATION_WIN_DELTA  = 1;
     uint8   public constant REPUTATION_LOSS_DELTA = 1;
 
     // -----------------------------------------------------------------------
@@ -225,9 +228,17 @@ contract AgentCoordProtocol is HederaScheduleService {
     // CONSTRUCTOR
     // -----------------------------------------------------------------------
 
-    constructor(address _memeJobAddress) payable {
-        owner = msg.sender;
-        memeJobAddress = _memeJobAddress;
+    constructor(
+        address _memeJobAddress,
+        uint256 _minSubmissionFee,
+        uint256 _reviewWindow,
+        uint256 _executionGasLimit
+    ) payable {
+        owner              = msg.sender;
+        memeJobAddress     = _memeJobAddress;
+        MIN_SUBMISSION_FEE = _minSubmissionFee;
+        REVIEW_WINDOW      = _reviewWindow;
+        EXECUTION_GAS_LIMIT = _executionGasLimit;
     }
 
     receive() external payable {}
