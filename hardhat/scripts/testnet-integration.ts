@@ -23,6 +23,7 @@
  */
 
 import { ethers } from "ethers";
+import { createMemeJobToken } from "./create-memejob-token.js";
 
 // .env may not be loaded yet when running standalone via `npx hardhat run`
 try { process.loadEnvFile(); } catch { /* already loaded or not present */ }
@@ -35,8 +36,6 @@ try { process.loadEnvFile(); } catch { /* already loaded or not present */ }
 // Old contract with 10-minute review window: 0xfA738659adb033c2dFcBE3cd387108C572d76476;
 const PROTOCOL_ADDRESS = "0x3bd0A94a790E4C36f242371C23Db296a702db7Dd";
 
-/** MemeJob contract address on Hedera testnet */
-const MEMEJOB_ADDRESS  = "0xa3bf9adec2fb49fb65c8948aed71c6bf1c4d61c8";
 
 /** Hedera testnet JSON-RPC endpoint */
 const RPC_URL = "https://testnet.hashio.io/api";
@@ -108,7 +107,7 @@ const PROTOCOL_ABI = [
 
   // Agent identity (ERC-8004)
   "function registerAgent(string calldata metadataURI) external",
-  "function agentIdentities(address) external view returns (tuple(address agentAddress, string metadataURI, uint256 registrationTime, int256 reputationScore, uint256 totalTrades, uint256 profitableTrades))",
+  "function agentIdentities(address) external view returns (address agentAddress, string metadataURI, uint256 registrationTime, int256 reputationScore, uint256 totalTrades, uint256 profitableTrades)",
 
   // Core protocol
   "function submitToken(address tokenAddress) external payable returns (uint256 reviewId)",
@@ -127,10 +126,6 @@ const PROTOCOL_ABI = [
   "event FeeDistributed(uint256 indexed reviewId, address indexed agent, uint256 amount)",
 ];
 
-const MEMEJOB_ABI = [
-  "function memeJob(string memory name, string memory symbol, string memory memo, address referrer, uint256 amount, bool distributeRewards) external payable returns (address)",
-  "function addressToMemeTokenMapping(address token) external view returns (address tokenAddress, address creatorAddress, uint256 fundsRaised, uint256 tokensSold, address firstBuyer, bool distributeRewards)",
-];
 
 // =============================================================================
 // CONTRACT INSTANCES
@@ -138,8 +133,6 @@ const MEMEJOB_ABI = [
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const protocol  = new ethers.Contract(PROTOCOL_ADDRESS, PROTOCOL_ABI, provider) as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const memeJob   = new ethers.Contract(MEMEJOB_ADDRESS,  MEMEJOB_ABI,  provider) as any;
 
 // =============================================================================
 // HELPERS
@@ -229,31 +222,13 @@ await waitAndConfirm("depositForAgent", txEscrow);
 console.log("  New escrow total   :", ethers.formatUnits(await protocol.agentEscrow(agentWallet.address), 8), "HBAR");
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 3 — Locate a MemeJob token to review
+// STEP 3 — Create a new MemeJob token (User2)
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTE: The memeJob() creation function (selector 0x76b8340e) consistently
-// reverts with an arithmetic overflow on the current proxy implementation —
-// it has not succeeded in any of the 25 most-recent on-chain calls.
-// As a workaround we use an existing token that was created earlier and is
-// actively traded. Replace EXISTING_MEME_TOKEN if you have a newer one.
-banner("Step 3 — Locate MemeJob token");
+banner("Step 3 — Create MemeJob token  (User2)");
 
-const EXISTING_MEME_TOKEN = "0x00000000000000000000000000000000007729ea";
-const tokenAddress = ethers.getAddress(EXISTING_MEME_TOKEN);
+const tokenAddress = await createMemeJobToken(user2Wallet);
 console.log("  Token address :", tokenAddress);
-
-// Verify the token exists in the MemeJob registry
-const tokenInfo = await memeJob.addressToMemeTokenMapping(tokenAddress);
-if (tokenInfo.tokenAddress === ethers.ZeroAddress) {
-  throw new Error(
-    `Token not found in MemeJob mapping.\n` +
-    `Replace EXISTING_MEME_TOKEN with a valid token address.\n` +
-    `Browse tokens at: https://hashscan.io/testnet/contract/${MEMEJOB_ADDRESS}`,
-  );
-}
-console.log("  Token confirmed in MemeJob registry ✓");
-console.log("  Creator      :", tokenInfo.creatorAddress);
-console.log("  Funds raised :", ethers.formatUnits(tokenInfo.fundsRaised, 8), "HBAR");
+console.log("  HashScan      :", `https://hashscan.io/testnet/contract/${tokenAddress}`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STEP 4 — User2 submits the token to the protocol for agent review
