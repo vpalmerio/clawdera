@@ -109,7 +109,13 @@ describe("AgentCoordProtocol", function () {
 
     // --- Deploy AgentCoordProtocol ---
     const Protocol = await ethers.getContractFactory("AgentCoordProtocol", owner);
-    protocol = await Protocol.deploy(mockJobAddr, { value: TEN_HBAR });
+    protocol = await Protocol.deploy(
+      mockJobAddr,
+      MIN_FEE,          // MIN_SUBMISSION_FEE  = 1 HBAR
+      REVIEW_WINDOW,    // REVIEW_WINDOW        = 600 seconds
+      3_000_000,        // EXECUTION_GAS_LIMIT
+      { value: TEN_HBAR }
+    );
     await protocol.waitForDeployment();
     protocolAddr = await protocol.getAddress();
     console.log("Protocol    :", protocolAddr);
